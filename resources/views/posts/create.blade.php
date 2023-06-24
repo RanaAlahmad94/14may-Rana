@@ -4,7 +4,15 @@
     <div class="card" style="margin:20px;">
         <div class="card-header">Create New posts</div>
         <div class="card-body">
-
+        @if ($errors->any())
+    <div class="alert alert-danger">
+        <ul>
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
             <form action="{{ url('posts') }}" method="post">
                 {!! csrf_field() !!}
                 <label>Title</label></br>

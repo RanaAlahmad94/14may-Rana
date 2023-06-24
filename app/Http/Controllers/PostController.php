@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\ForbiddenWord;
 
 class PostController extends Controller
 {
@@ -53,13 +54,52 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-
-        $post=new Post($request->all());
-        $post['user_id']=Auth::id();
+        $request->validate([
+            'title' => 'required|max:255',
+            'desc' => 'required',
+            'content' => 'required',
+        ]);
+    
+        $user = Auth::user();
+    
+        if ($user->blocked) {
+            return redirect()->back()->withErrors(['You are blocked from creating new posts.']);
+        }
+    
+        $post = new Post();
+        $post->title = $request->title;
+        $post->desc = $request->desc;
+        $post->content = $this->replaceForbiddenWords($request->content);
+        $post->user_id = Auth::id();
         $post->save();
-        return redirect('/');
+    
+        return redirect()->route('posts.index');
     }
-
+    
+    private function replaceForbiddenWords($content)
+    {
+        $forbiddenWords = ForbiddenWord::pluck('word')->toArray();
+        $forbiddenWordCount = 0;
+    
+        foreach ($forbiddenWords as $word) {
+            if (strlen($word) < 4) {
+                $replacement = substr($word, 0, 1) . str_repeat('*', strlen($word) - 1);
+                } else {
+                $replacement = substr($word, 0, 1) . str_repeat('*', strlen($word) - 2) . substr($word, -1, 1);
+            }
+            $content = str_ireplace($word, $replacement, $content, $count);
+    
+            $forbiddenWordCount += $count;
+        }
+    
+        if ($forbiddenWordCount > 5) {
+            $user = Auth::user();
+            $user->blocked = true;
+            $user->save();
+        }
+    
+        return $content;
+    }
     /**
      * Display the specified resource.
      *
