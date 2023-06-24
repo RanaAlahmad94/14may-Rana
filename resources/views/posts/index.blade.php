@@ -27,6 +27,7 @@
                 <td>{{ $post->title }}</td>
                 <td>{{ $post->desc }}</td>
                 <td>{{ $post->content }}</td>
+                <td><p>Posted {{ $post->created_at->diffForHumans() }}</p></td>
 
                 <td>
                 <td>
